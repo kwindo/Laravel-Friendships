@@ -1,0 +1,27 @@
+{
+    "name": "kimdevylder/friendships",
+    "description": "This light package, with no dependencies, gives Eloquent models the ability to manage.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Kim De Vylder",
+            "email": "kim.devylder@sanka.be"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Kimdevylder\\Friendships\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Kimdevylder\\Friendships\\FriendshipsServiceProvider"
+            ]
+        }
+    }
+}
