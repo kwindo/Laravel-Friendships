@@ -5,7 +5,7 @@ return [
      * Load migrations from package migrations,
      * If you published the migration files, please set to `false`.
      */
-    'migrations' => false,
+    'migrations' => true,
 
     /*
      * Models Related.
