@@ -10,7 +10,7 @@ use Kimdevylder\Friendships\Interaction;
 use Kimdevylder\Friendships\Models\Friendship;
 use Kimdevylder\Friendships\Status;
 
-// use Log;
+use Log;
 
 /**
  * Class Friendable
@@ -200,6 +200,7 @@ trait Friendable
 
         foreach (json_decode($friendship, true) as $key => $value) {
             if ((in_array($key, $fields) || in_array('*', $fields)) && !is_array($value)) {
+                
                 $friendshipFieldsArray[$key] = $friendship->$key;
             }
         }
@@ -210,10 +211,18 @@ trait Friendable
             $throughRecipientArray = [];
 
             if (in_array('sender', $with) && $friendship->sender){
+
                 $senderFields = [];
                 foreach (json_decode($friendship->sender, true) as $key => $value) {
                     if (in_array($key, $modelFields) || in_array('*', $modelFields)) {
-                        $senderFields[$key] = $friendship->sender->$key;
+
+                        if ($friendship->sender->$key) { // If key returns a value
+                            $senderFields[$key] = $friendship->sender->$key; 
+                        } else { // Else try again with key in CamelCase. For relationships table names with underscores
+                            $keyCamelCase = str_replace(' ', '', ucwords(str_replace('_', ' ', $key)));
+                            $senderFields[$key] = $friendship->sender->$keyCamelCase;
+                        }
+
                     }
                 }
                 $throughSenderArray['model'] = $senderFields;
@@ -223,7 +232,13 @@ trait Friendable
                 $recipientFields = [];
                 foreach (json_decode($friendship->recipient, true) as $key => $value) {
                     if (in_array($key, $modelFields) || in_array('*', $modelFields)) {
-                        $recipientFields[$key] = $friendship->recipient->$key;
+
+                        if ($friendship->recipient->$key) { // If key returns a value
+                            $recipientFields[$key] = $friendship->recipient->$key; 
+                        } else { // Else try again with key in CamelCase. For relationships table name with underscores
+                            $keyCamelCase = str_replace(' ', '', ucwords(str_replace('_', ' ', $key)));
+                            $recipientFields[$key] = $friendship->recipient->$keyCamelCase;
+                        }
                     }
                 }
                 $throughSenderArray['model'] = $recipientFields;
