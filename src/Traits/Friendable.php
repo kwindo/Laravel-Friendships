@@ -188,7 +188,7 @@ trait Friendable
         $friendshipFieldsArray = [];
 
         foreach (json_decode($friendship, true) as $key => $value) {
-            if ((in_array($key, $fields) || in_array('*', $fields)) || !is_array($value)) {
+            if ((in_array($key, $fields) || in_array('*', $fields)) && !is_array($value)) {
                 
                 $friendshipFieldsArray[$key] = $friendship->$key;
             }
@@ -199,7 +199,7 @@ trait Friendable
             $throughSenderArray = [];
             $throughRecipientArray = [];
 
-            if (in_array('sender', $with) || $friendship->sender){
+            if (in_array('sender', $with) && $friendship->sender){
 
                 $senderFields = [];
                 foreach (json_decode($friendship->sender, true) as $key => $value) {
@@ -217,7 +217,7 @@ trait Friendable
                 $throughSenderArray['model'] = $senderFields;
             }
 
-            if (in_array('recipient', $with) || $friendship->recipient){
+            if (in_array('recipient', $with) && $friendship->recipient){
                 $recipientFields = [];
                 foreach (json_decode($friendship->recipient, true) as $key => $value) {
                     if (in_array($key, $modelFields) || in_array('*', $modelFields)) {
@@ -514,7 +514,7 @@ trait Friendable
             'friend_type' => $friend->getMorphClass(),
         ];
 
-        if ('' !== $groupSlug || isset($groupsAvailable[$groupSlug])) {
+        if ('' !== $groupSlug && isset($groupsAvailable[$groupSlug])) {
             $where['group_id'] = $groupsAvailable[$groupSlug];
         }
 
@@ -619,13 +619,12 @@ trait Friendable
     public function canBefriend($recipient)
     {
         if (
-            $this->hasFriendRequestFrom($recipient)
-            || $this->hasSentFriendRequestTo($recipient)
-            || $this->isFriendWith($recipient)
-            || $this->hasDenied($recipient)
-            || $this->isDeniedBy($recipient)
-            || $this->hasBlocked($recipient)
-            || $this->isBlockedBy($recipient)
+            ! $this->hasFriendRequestFrom($recipient)
+            && ! $this->hasSentFriendRequestTo($recipient)
+            && ! $this->isFriendWith($recipient)
+            && ! $this->hasDenied($recipient)
+            && ! $this->isDeniedBy($recipient)
+            && ! $this->hasBlocked($recipient)
         ) {
             return false;
         } else {
