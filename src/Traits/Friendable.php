@@ -619,17 +619,17 @@ trait Friendable
     public function canBefriend($recipient)
     {
         if (
-            ! $this->hasFriendRequestFrom($recipient)
-            && ! $this->hasSentFriendRequestTo($recipient)
-            && ! $this->isFriendWith($recipient)
-            && ! $this->hasDenied($recipient)
-            && ! $this->isDeniedBy($recipient)
-            && ! $this->hasBlocked($recipient)
+            $this->hasFriendRequestFrom($recipient)
+            || $this->hasSentFriendRequestTo($recipient)
+            || $this->isFriendWith($recipient)
+            || $this->hasDenied($recipient)
+            || $this->isDeniedBy($recipient)
+            || $this->hasBlocked($recipient)
         ) {
             return false;
-        } else {
-            return true;
         }
+        
+        return true;
     }
 
     /**
