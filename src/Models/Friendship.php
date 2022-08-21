@@ -21,8 +21,6 @@ class Friendship extends Model
      */
     public function __construct(array $attributes = [])
     {
-        // $this->table = config('acquaintances.tables.friendships');
-
         parent::__construct($attributes);
     }
 

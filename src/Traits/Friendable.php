@@ -8,6 +8,7 @@ use Kimdevylder\Friendships\Interaction;
 use Kimdevylder\Friendships\Models\Friendship;
 use Kimdevylder\Friendships\Status;
 
+use DB;
 use Log;
 
 /**
@@ -27,9 +28,62 @@ trait Friendable
      *
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function getFriends($perPage = 0, array $fields = ['*'], array $modelFields = ['*'], bool $cursor = false)
+    public function getFriends($perPage = 0, array $fields = ['*'], array $modelFields = ['*'], string $filterField = 'name', string $filterQuery = '', bool $cursor = false)
     {
-        return $this->getOrPaginate($this->findFriendships( Status::ACCEPTED, 'all', ['recipient', 'sender']), $perPage, $cursor, ['recipient', 'sender'], $fields, $modelFields);
+        // Log::info('GET FRIENDS');
+        // Log::info('-----------------------------------------------------');
+
+        /* $with=['recipient', 'sender'];
+        $type= 'all';
+        $searchQuery = 'brown';
+        
+        $friendshipModelName = Interaction::getFriendshipModelName();
+        $query = $friendshipModelName::select('friendships.*', 'users.name as name');
+
+        $query->leftJoin('users', function($join)
+        {
+            $join->on('users.id', '=', DB::raw("(
+    			CASE 
+    			WHEN users.id != " . $this->getKey() . " && users.id = friendships.sender_id
+    			THEN friendships.sender_id
+    			WHEN users.id != " . $this->getKey() . " && users.id = friendships.recipient_id
+                THEN friendships.recipient_id
+    			END)"));
+
+            $join->where('status', 'accepted');
+            
+        });
+
+        switch ($type) {
+            case 'all':
+                $query->where(function ($q) {$q->whereRecipient($this);});
+                $query->where('users.name', 'LIKE', '%Brown%');
+    
+                $query->orWhere(function ($q) {$q->whereSender($this);});
+                $query->where('users.name', 'LIKE', '%Brown%'); 
+                break;
+            case 'pending':
+                $query->where(function ($q) {$q->whereSender($this);});
+                $query->where('users.name', 'LIKE', '%Brown%');  
+                break;
+            case 'request':
+                $query->where(function ($q) {$q->whereRecipient($this);});
+               $query->where('users.name', 'LIKE', '%Brown%');  
+                break;
+        }
+    
+
+            return $query
+            ->orderBy('updated_at', 'desc')
+            ->paginate($perPage)
+            ->through(function ($friendships) {
+                return [
+                    'friendships' => $friendships,
+                ];
+            }); */
+
+        return $this->getOrPaginate($this->findFriendships(Status::ACCEPTED, 'all', ['recipient', 'sender'], $filterField, $filterQuery), $perPage, $cursor, ['recipient', 'sender'], $fields, $modelFields);
+      
     }
 
     /**
@@ -39,9 +93,9 @@ trait Friendable
      *
      * @return \Illuminate\Database\Eloquent\Collection|Friendship[]
      */
-    public function getPendingFriendships(int $perPage = 0, array $fields = ['*'], array $modelFields = ['*'], bool $cursor = false)
+    public function getPendingFriendships(int $perPage = 0, array $fields = ['*'], array $modelFields = ['*'], string $filterField = 'name', string $filterQuery = '', bool $cursor = false)
     {
-        return $this->getOrPaginate($this->findFriendships(Status::PENDING, 'pending', ['recipient'])->where('sender_id', $this->id), $perPage, $cursor, ['recipient'], $fields, $modelFields);
+        return $this->getOrPaginate($this->findFriendships(Status::PENDING, 'pending', ['recipient'], $filterField, $filterQuery)->where('sender_id', $this->id), $perPage, $cursor, ['recipient'], $fields, $modelFields);
     }
 
     /**
@@ -51,9 +105,9 @@ trait Friendable
      *
      * @return \Illuminate\Database\Eloquent\Collection|Friendship[]
      */
-    public function getFriendshipRequests(int $perPage = 0, array $fields = ['*'], array $modelFields = ['*'], bool $cursor = false)
+    public function getFriendshipRequests(int $perPage = 0, array $fields = ['*'], array $modelFields = ['*'], string $filterField = 'name', string $filterQuery = '', bool $cursor = false)
     {
-        return $this->getOrPaginate($this->findFriendships(Status::PENDING, 'request', ['sender'])->where('recipient_id', $this->id), $perPage, $cursor, ['sender'], $fields, $modelFields);
+        return $this->getOrPaginate($this->findFriendships(Status::PENDING, 'request', ['sender'], $filterField, $filterQuery)->where('recipient_id', $this->id), $perPage, $cursor, ['sender'], $fields, $modelFields);
     }
 
     /**
@@ -62,9 +116,15 @@ trait Friendable
      *
      * @return \Illuminate\Database\Eloquent\Collection|Friendship[]
      */
-    public function getBlockedFriendships(int $perPage = 0, array $fields = ['*'], array $modelFields = ['*'], bool $cursor = false)
+    public function getBlockedFriendships(int $perPage = 0, array $fields = ['*'], array $modelFields = ['*'], string $filterField = 'name', string $filterQuery = '', bool $cursor = false)
     {
-        return $this->getOrPaginate($this->findFriendships(Status::BLOCKED, 'all', ['recipient']), $perPage, $cursor, ['recipient'], $fields, $modelFields);
+
+        // Log::info('GET BLOCKED FRIENDSHIPS');
+        // Log::info('fields: ' . json_encode($fields));
+        // Log::info('modelFields: ' . json_encode($modelFields));
+        // Log::info('-----------------------------------------------------');
+
+        return $this->getOrPaginate($this->findFriendships(Status::BLOCKED, 'all', ['recipient'], $filterField, $filterQuery), $perPage, $cursor, ['recipient'], $fields, $modelFields);
     }
 
     /**
@@ -73,9 +133,9 @@ trait Friendable
      *
      * @return \Illuminate\Database\Eloquent\Collection|Friendship[]
      */
-    public function getDeniedFriendships(int $perPage = 0, array $fields = ['*'], array $modelFields = ['*'], bool $cursor = false)
+    public function getDeniedFriendships(int $perPage = 0, array $fields = ['*'], array $modelFields = ['*'], string $filterField = 'name', string $filterQuery = '', bool $cursor = false)
     {
-        return $this->getOrPaginate($this->findFriendships(Status::DENIED, 'request', ['sender']), $perPage, $cursor, ['sender'], $fields, $modelFields);
+        return $this->getOrPaginate($this->findFriendships(Status::DENIED, 'request', ['sender'], $filterField, $filterQuery), $perPage, $cursor, ['sender'], $fields, $modelFields);
     }
 
     /**
@@ -86,9 +146,9 @@ trait Friendable
      *
      * @return \Illuminate\Database\Eloquent\Collection|Friendship[]
      */
-    public function getAllFriendships(int $perPage = 0, array $fields = ['*'], array $modelFields = ['*'], bool $cursor = false)
+    public function getAllFriendships(int $perPage = 0, array $fields = ['*'], array $modelFields = ['*'], string $filterField = 'name', string $filterQuery = '', bool $cursor = false)
     {
-        return $this->getOrPaginate($this->findFriendships(null, 'all', ['recipient', 'sender']), $perPage, $cursor, ['recipient', 'sender'], $fields, $modelFields);
+        return $this->getOrPaginate($this->findFriendships(null, 'all', ['recipient', 'sender'], $filterField, $filterQuery), $perPage, $cursor, ['recipient', 'sender'], $fields, $modelFields);
     }
 
     /**
@@ -99,9 +159,10 @@ trait Friendable
      *
      * @return \Illuminate\Database\Eloquent\Collection|Friendship[]
      */
-    public function getAcceptedFriendships(int $perPage = 0, array $fields = ['*'], array $modelFields = ['*'], bool $cursor = false)
+    
+    public function getAcceptedFriendships(int $perPage = 0, array $fields = ['*'], array $modelFields = ['*'], string $filterField = 'name', string $filterQuery = '', bool $cursor = false)
     {
-        return $this->getOrPaginate($this->findFriendships(Status::ACCEPTED, 'request', ['sender']), $perPage, $cursor, ['sender'], $fields, $modelFields);
+        return $this->getOrPaginate($this->findFriendships(Status::ACCEPTED, 'request', ['sender'], $filterField, $filterQuery), $perPage, $cursor, ['sender'], $fields, $modelFields);
     }
 
     /**
@@ -117,6 +178,10 @@ trait Friendable
      */
     public function getMutualFriends(Model $other, $perPage = 0, array $fields = ['*'], array $modelFields = ['*'], bool $cursor = false)
     {
+
+        // Log::info('GET MUTUAL FRIENDS');
+        // Log::info('-----------------------------------------------------');
+
         return $this->getOrPaginate($this->getMutualFriendsQueryBuilder($other, $fields), $perPage, $cursor, ['recipient', 'sender'], $fields, $modelFields);
     }
 
@@ -130,9 +195,13 @@ trait Friendable
      *
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function getFriendsOfFriends($perPage = 0, array $fields = ['*'])
+    public function getFriendsOfFriends(Model $other, $perPage = 0, array $fields = ['*'], array $modelFields = ['*'], bool $cursor = false)
     {
-        return $this->getOrPaginate($this->friendsOfFriendsQueryBuilder(), $perPage, $fields);
+
+        // Log::info('GET FRIENDS OF FRIENDS');
+        // Log::info('-----------------------------------------------------');
+
+        return $this->getOrPaginate($this->friendsOfFriendsQueryBuilder($other, $fields), $perPage, $cursor, ['recipient', 'sender'], $fields, $modelFields);
     }
 
     /**
@@ -145,6 +214,9 @@ trait Friendable
      */
     public function getFriendsCount()
     {
+        // Log::info('GET FRIEDS COUNT');
+        // Log::info('-----------------------------------------------------');
+
         $friendsCount = $this->findFriendships(Status::ACCEPTED)->count();
 
         return $friendsCount;
@@ -157,11 +229,38 @@ trait Friendable
      */
     public function getMutualFriendsCount($other)
     {
+        // Log::info('GET MUTUAL FRIEDS COUNT');
+        // Log::info('-----------------------------------------------------');
         return $this->getMutualFriendsQueryBuilder($other)->count();
+    }
+
+    /**
+     * Get the number of friends of friends
+     *
+     * @return integer
+     */
+    public function getFriendsOfFriendsCount($other)
+    {
+        // Log::info('GET FRIENDS OF FRIENDS COUNT');
+        // Log::info('other: ' . $other);
+        // Log::info('-----------------------------------------------------');
+
+        return $this->friendsOfFriendsQueryBuilder($other)->count();
+
     }
 
     protected function getOrPaginate($builder, $perPage, bool $cursor = false, array $with = null, array $fields = ['*'], array $modelFields = ['*'])
     {
+
+        // Log::info('GET PAGINATE');
+        // Log::info('builder: ' . json_encode($builder));
+        // Log::info('perPage: ' . $perPage);
+        // Log::info('cursor: ' . $cursor);
+        // Log::info('with: ' . json_encode($with));
+        // Log::info('fields: ' . json_encode($fields));
+        // Log::info('modelFields: ' . json_encode($modelFields));
+        // Log::info('-----------------------------------------------------');
+
         if ($perPage == 0) {
             return $builder->select($fields)->get();
         }
@@ -249,27 +348,63 @@ trait Friendable
      *
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    private function findFriendships($status = null, string $type = 'all', array $with = null)
+    private function findFriendships($status = 'null', string $type = 'all', array $with = null, string $filterField = '', string $filterQuery = '')
     {
-        $friendshipModelName = Interaction::getFriendshipModelName();
 
-        $query = $friendshipModelName::where(function ($query) use ($type) {
-            switch ($type) {
-                case 'all':
-                    $query->where(function ($q) {$q->whereSender($this);})->orWhere(function ($q) {$q->whereRecipient($this);});
-                    break;
-                case 'pending':
-                    $query->where(function ($q) {$q->whereSender($this);});
-                    break;
-                case 'request':
-                    $query->where(function ($q) {$q->whereRecipient($this);});
-                    break;
-            }
+        // Log::info('FIND FRIENDSHIPS');
+        // Log::info('status: ' . $status);
+        // Log::info('filterField: ' . $filterField);
+        // Log::info('filterQuery: ' . $filterQuery);
+        // Log::info('-----------------------------------------------------');
+
+        $friendshipModelName = Interaction::getFriendshipModelName();
+        $selectString = null;
+
+        if ($filterField) {
+            $selectString = config('friendships.tables.model') . "." . $filterField;
+            $query = $friendshipModelName::select('friendships.*', $selectString);
+        } else {
+            $query = $friendshipModelName::select('friendships.*');
+        }
+
+        $query->leftJoin(config('friendships.tables.model'), function($join) use ($status)
+        {
+            $join->on(config('friendships.tables.model') . '.id', '=', DB::raw("(
+    			CASE 
+    			WHEN " . config('friendships.tables.model') . ".id != " . $this->getKey() . " 
+                    && " . config('friendships.tables.model') . ".id = friendships.sender_id
+    			THEN friendships.sender_id
+    			WHEN " . config('friendships.tables.model') . ".id != " . $this->getKey() . " 
+                    && " . config('friendships.tables.model') . ".id = friendships.recipient_id
+                THEN friendships.recipient_id
+    			END)"));
+
+                //if $status is passed, add where clause
+                if ( ! is_null($status)) {
+                    $join->where('status', $status);
+                }
+            
         });
+
+        switch ($type) {
+            case 'all':
+                $query->where(function ($q) {$q->whereRecipient($this);});
+                $query->where(config('friendships.tables.model') . '.name', 'LIKE', '%' . $filterQuery . '%');
+                $query->orWhere(function ($q) {$q->whereSender($this);});
+                $query->where(config('friendships.tables.model') . '.name', 'LIKE', '%' . $filterQuery . '%');
+                break;
+            case 'pending':
+                $query->where(function ($q) {$q->whereSender($this);});
+                $query->where(config('friendships.tables.model') . '.name', 'LIKE', '%' . $filterQuery . '%'); 
+                break;
+            case 'request':
+                $query->where(function ($q) {$q->whereRecipient($this);});
+               $query->where(config('friendships.tables.model') . '.name', 'LIKE', '%' . $filterQuery . '%');
+                break;
+        }
 
         //if $with is passed, add with clause
         if ( ! is_null($with)) {
-
             $senderArray = [];
             $recipientArray = [];
 
@@ -286,13 +421,7 @@ trait Friendable
                     $query->where('id', '!=', $this->getKey());
                 }];
             }
-
             $query->with(array_merge($senderArray, $recipientArray));
-        }
-
-        //if $status is passed, add where clause
-        if ( ! is_null($status)) {
-            $query->where('status', $status);
         }
 
         return $query;
@@ -330,8 +459,12 @@ trait Friendable
      *
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    private function friendsOfFriendsQueryBuilder($groupSlug = '')
+    private function friendsOfFriendsQueryBuilder(Model $other, array $fields = ['*'])
     {
+        // Log::info('FRIENDS OF FRIENDS QUERYBUILDER');
+        // Log::info('other: ' . $other);
+        // Log::info('-----------------------------------------------------');
+
         $friendships = $this->findFriendships(Status::ACCEPTED)->get(['sender_id', 'recipient_id']);
         $recipients = $friendships->pluck('recipient_id')->all();
         $senders = $friendships->pluck('sender_id')->all();
@@ -347,7 +480,7 @@ trait Friendable
                                   $q->whereIn('recipient_id', $friendIds);
                               });
                           })
-                          ->whereGroup($this, $groupSlug)
+                          // ->whereGroup($this, $groupSlug)
                           ->get(['sender_id', 'recipient_id']);
 
         $fofIds = array_unique(
