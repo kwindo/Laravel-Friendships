@@ -344,11 +344,11 @@ trait Friendable
     private function findFriendships($status = 'null', string $type = 'all', array $with = null, string $filterField = '', string $filterQuery = '')
     {
 
-        // Log::info('FIND FRIENDSHIPS');
-        // Log::info('status: ' . $status);
-        // Log::info('filterField: ' . $filterField);
-        // Log::info('filterQuery: ' . $filterQuery);
-        // Log::info('-----------------------------------------------------');
+        Log::info('FIND FRIENDSHIPS');
+        Log::info('status: ' . $status);
+        Log::info('filterField: ' . $filterField);
+        Log::info('filterQuery: ' . $filterQuery);
+        Log::info('-----------------------------------------------------');
 
         $friendshipModelName = Interaction::getFriendshipModelName();
         $selectString = null;
@@ -378,22 +378,32 @@ trait Friendable
                 }
             
         });
-
         switch ($type) {
             case 'all':
                 $query->where(function ($q) {$q->whereRecipient($this);});
-                $query->where(config('friendships.tables.model') . '.name', 'LIKE', '%' . $filterQuery . '%');
+
+                if ($filterField && $filterQuery) {
+                    $query->where(config('friendships.tables.model') . "." . $filterField, 'LIKE', '%' . $filterQuery . '%');
+                }
                 $query->orWhere(function ($q) {$q->whereSender($this);});
-                $query->where(config('friendships.tables.model') . '.name', 'LIKE', '%' . $filterQuery . '%');
+                
+                if ($filterField && $filterQuery) {
+                    $query->where(config('friendships.tables.model') . "." . $filterField, 'LIKE', '%' . $filterQuery . '%');
+                }
                 break;
             case 'pending':
                 $query->where(function ($q) {$q->whereSender($this);});
-                $query->where(config('friendships.tables.model') . '.name', 'LIKE', '%' . $filterQuery . '%'); 
+
+                if ($filterField && $filterQuery) {
+                    $query->where(config('friendships.tables.model') . "." . $filterField, 'LIKE', '%' . $filterQuery . '%');
+                }
                 break;
             case 'request':
                 $query->where(function ($q) {$q->whereRecipient($this);});
-               $query->where(config('friendships.tables.model') . '.name', 'LIKE', '%' . $filterQuery . '%');
-                break;
+
+                if ($filterField && $filterQuery) {
+                    $query->where(config('friendships.tables.model') . "." . $filterField, 'LIKE', '%' . $filterQuery . '%');
+                }
         }
 
         //if $with is passed, add with clause
