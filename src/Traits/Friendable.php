@@ -275,6 +275,7 @@ trait Friendable
         return $builder
         ->orderBy('updated_at', 'desc')
         ->paginate($perPage)
+        ->withQueryString()
         ->through(function ($friendship) use ($with, $fields) {
             return $this->friendshipFields($friendship, $with, $fields);
         });
@@ -344,11 +345,11 @@ trait Friendable
     private function findFriendships($status = 'null', string $type = 'all', array $with = null, string $filterField = '', string $filterQuery = '')
     {
 
-        Log::info('FIND FRIENDSHIPS');
-        Log::info('status: ' . $status);
-        Log::info('filterField: ' . $filterField);
-        Log::info('filterQuery: ' . $filterQuery);
-        Log::info('-----------------------------------------------------');
+        // Log::info('FIND FRIENDSHIPS');
+        // Log::info('status: ' . $status);
+        // Log::info('filterField: ' . $filterField);
+        // Log::info('filterQuery: ' . $filterQuery);
+        // Log::info('-----------------------------------------------------');
 
         $friendshipModelName = Interaction::getFriendshipModelName();
         $selectString = null;
@@ -362,7 +363,9 @@ trait Friendable
 
         $query->leftJoin(config('friendships.tables.model'), function($join) use ($status)
         {
-            $join->on(config('friendships.tables.model') . '.id', '=', DB::raw("(
+            $join->on(
+                config('friendships.tables.model') . '.id', '=', DB::raw(
+                "(
     			CASE 
     			WHEN " . config('friendships.tables.model') . ".id != " . $this->getKey() . " 
                     && " . config('friendships.tables.model') . ".id = friendships.sender_id
@@ -370,29 +373,43 @@ trait Friendable
     			WHEN " . config('friendships.tables.model') . ".id != " . $this->getKey() . " 
                     && " . config('friendships.tables.model') . ".id = friendships.recipient_id
                 THEN friendships.recipient_id
-    			END)"));
+    			END)"
+                )
+            );
 
-                //if $status is passed, add where clause
-                if ( ! is_null($status)) {
-                    $join->where('status', $status);
-                }
+            //if $status is passed, add where clause
+            if ( ! is_null($status)) {
+                // $join->where('status', $status);
+            }
             
         });
+
         switch ($type) {
             case 'all':
                 $query->where(function ($q) {$q->whereRecipient($this);});
+                if ( ! is_null($status)) {
+                    $query->where('status', $status);
+                }
 
                 if ($filterField && $filterQuery) {
                     $query->where(config('friendships.tables.model') . "." . $filterField, 'LIKE', '%' . $filterQuery . '%');
                 }
+
                 $query->orWhere(function ($q) {$q->whereSender($this);});
-                
+                if ( ! is_null($status)) {
+                    $query->where('status', $status);
+                }
+
                 if ($filterField && $filterQuery) {
                     $query->where(config('friendships.tables.model') . "." . $filterField, 'LIKE', '%' . $filterQuery . '%');
                 }
+
                 break;
             case 'pending':
                 $query->where(function ($q) {$q->whereSender($this);});
+                if ( ! is_null($status)) {
+                    $query->where('status', $status);
+                }
 
                 if ($filterField && $filterQuery) {
                     $query->where(config('friendships.tables.model') . "." . $filterField, 'LIKE', '%' . $filterQuery . '%');
@@ -400,6 +417,9 @@ trait Friendable
                 break;
             case 'request':
                 $query->where(function ($q) {$q->whereRecipient($this);});
+                if ( ! is_null($status)) {
+                    $query->where('status', $status);
+                }
 
                 if ($filterField && $filterQuery) {
                     $query->where(config('friendships.tables.model') . "." . $filterField, 'LIKE', '%' . $filterQuery . '%');
